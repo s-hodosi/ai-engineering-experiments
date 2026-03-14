@@ -5,11 +5,7 @@ from agents import run_agents
 
 app = FastAPI()
 
-app.mount("/ui", StaticFiles(directory="static", html=True), name="static")
-
-@app.get("/")
-def root():
-    return RedirectResponse("/ui")
+app.mount("/", StaticFiles(directory="static", html=True), name="static")
 
 class JobInput(BaseModel):
     cv: str
