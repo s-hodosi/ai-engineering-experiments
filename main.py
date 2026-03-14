@@ -7,6 +7,9 @@ app = FastAPI()
 
 app.mount("/ui", StaticFiles(directory="static", html=True), name="static")
 
+@app.get("/")
+def root():
+    return RedirectResponse("/ui")
 
 class JobInput(BaseModel):
     cv: str
