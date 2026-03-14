@@ -5,8 +5,6 @@ from agents import run_agents
 
 app = FastAPI()
 
-app.mount("/", StaticFiles(directory="static", html=True), name="static")
-
 class JobInput(BaseModel):
     cv: str
     job_description: str
@@ -21,3 +19,6 @@ def analyze(data: JobInput):
     )
 
     return {"result": result}
+
+# mount static AFTER api routes
+app.mount("/", StaticFiles(directory="static", html=True), name="static")
