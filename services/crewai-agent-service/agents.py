@@ -9,37 +9,22 @@ from crewai_tools import TavilySearchTool
 from models import JobMatch, MarketResearch, CareerEvaluation, SalaryEstimation
 from langchain_google_genai import ChatGoogleGenerativeAI
 
-from openinference.instrumentation.crewai import CrewAIInstrumentor
-from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
-from opentelemetry.sdk.trace import TracerProvider
-from opentelemetry.sdk.trace.export import SimpleSpanProcessor
+import mlflow
 
-import base64
+mlflow.crewai.autolog()
 
-endpoint = f"{os.environ.get('LANGFUSE_HOST', 'https://cloud.langfuse.com')}/api/public/otel/v1/traces"
-auth_str = f"{os.environ.get('LANGFUSE_PUBLIC_KEY')}:{os.environ.get('LANGFUSE_SECRET_KEY')}"
-b64_auth = base64.b64encode(auth_str.encode()).decode()
+# This is the "Magic" line for LangChain-based agents
+mlflow.langchain.autolog()
 
-tracer_provider = TracerProvider()
-tracer_provider.add_span_processor(
-    SimpleSpanProcessor(
-        OTLPSpanExporter(
-            endpoint=endpoint,
-            headers={
-                "Authorization": f"Basic {b64_auth}"
-            }
-        )
-    )
-)
-CrewAIInstrumentor().instrument(tracer_provider=tracer_provider)
+# Ensure your experiment is set
+mlflow.set_experiment("crewai-agent-service")
 
 search = TavilySearchTool()
 
 llm = ChatGoogleGenerativeAI(
     model="gemini-2.5-flash", 
     temperature=0.7,
-    convert_system_message_to_human=True, # Helps with some agentic prompts
-    include_response_metadata=True
+    convert_system_message_to_human=True # Helps with some agentic prompts
 )
 #llm = "gemini/gemini-2.5-flash"
 
@@ -118,8 +103,7 @@ Return ONLY valid JSON.
         expected_output="JSON market research",
         output_pydantic=MarketResearch,
         agent=market_agent,
-        context=[task1],
-        async_execution=True
+        context=[task1]
     )
 
     task3 = Task(
@@ -142,8 +126,7 @@ Return ONLY valid JSON.
         expected_output="Salary estimation",
         output_pydantic=SalaryEstimation,
         agent=salary_agent,
-        context=[task1],
-        async_execution=True
+        context=[task1,task2]
     )
 
     task4 = Task(
