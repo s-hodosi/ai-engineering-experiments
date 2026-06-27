@@ -4,29 +4,13 @@ from dotenv import load_dotenv
 # 1. Load and Force Overrides
 load_dotenv(override=True)
 
-from crewai import Agent, Task, Crew
+from crewai import Agent, Task, Crew, LLM
 from crewai_tools import TavilySearchTool
 from models import JobMatch, MarketResearch, CareerEvaluation, SalaryEstimation
-from langchain_google_genai import ChatGoogleGenerativeAI
-
-import mlflow
-
-mlflow.crewai.autolog()
-
-# This is the "Magic" line for LangChain-based agents
-mlflow.langchain.autolog()
-
-# Ensure your experiment is set
-mlflow.set_experiment("crewai-agent-service")
 
 search = TavilySearchTool()
 
-llm = ChatGoogleGenerativeAI(
-    model="gemini-2.5-flash", 
-    temperature=0.7,
-    convert_system_message_to_human=True # Helps with some agentic prompts
-)
-#llm = "gemini/gemini-2.5-flash"
+llm = LLM(model="gemini/gemini-2.5-flash", temperature=0.7)
 
 
 job_agent = Agent(
@@ -60,7 +44,28 @@ career_agent = Agent(
 )
 
 
-def run_agents(cv: str, jd: str):
+TASK_LABELS = [
+    "Job match analysis",
+    "Market research",
+    "Salary estimation",
+    "Career evaluation",
+]
+
+
+def run_agents(cv: str, jd: str, on_task_complete=None):
+
+    task_counter = [0]
+
+    def task_callback(task_output):
+        idx = task_counter[0]
+        if on_task_complete and idx < len(TASK_LABELS):
+            on_task_complete({
+                "task": f"task{idx + 1}",
+                "label": TASK_LABELS[idx],
+                "step": idx + 1,
+                "total": 4,
+            })
+        task_counter[0] += 1
 
     task1 = Task(
         description="""
@@ -155,8 +160,9 @@ Return ONLY a raw JSON object.
     )
 
     crew = Crew(
-        agents=[job_agent, market_agent, salary_agent, career_agent], 
+        agents=[job_agent, market_agent, salary_agent, career_agent],
         tasks=[task1, task2, task3, task4],
+        task_callback=task_callback,
         verbose=True
     )
 

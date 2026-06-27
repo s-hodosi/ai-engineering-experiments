@@ -1,14 +1,31 @@
 <html>
 
 <head>
-
     <title>AI Job Evaluator</title>
-
     <style>
+        :root {
+            --bg:        #1a1714;
+            --surface:   #242220;
+            --surface-2: #2e2b28;
+            --border:    #3a3530;
+            --text:      #ede8e0;
+            --muted:     #9a9088;
+            --accent:    #60a5fa;
+            --success:   #4ade80;
+            --danger:    #f87171;
+        }
+
+        * { box-sizing: border-box; }
+
         body {
             font-family: Arial, sans-serif;
-            background: #f5f7fb;
+            background: var(--bg);
+            color: var(--text);
             margin: 40px;
+        }
+
+        h1, h3, h4 {
+            color: var(--text);
         }
 
         .container {
@@ -16,82 +33,167 @@
             margin: auto;
         }
 
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            padding: 20px;
+            margin-top: 20px;
+            border-radius: 8px;
+        }
+
+        .section-title {
+            font-size: 20px;
+            margin-bottom: 10px;
+            color: var(--text);
+        }
+
         textarea {
             width: 100%;
             padding: 10px;
             font-size: 14px;
             margin-top: 5px;
+            background: var(--surface-2);
+            color: var(--text);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            outline: none;
+            resize: vertical;
+        }
+
+        textarea:focus {
+            border-color: var(--accent);
         }
 
         button {
             margin-top: 20px;
             padding: 12px 20px;
             font-size: 16px;
-            background: #3b82f6;
-            color: white;
+            background: var(--accent);
+            color: #0f1117;
             border: none;
             border-radius: 6px;
             cursor: pointer;
+            font-weight: 600;
         }
 
         button:hover {
-            background: #2563eb;
+            opacity: 0.85;
         }
 
-        .card {
-            background: white;
-            padding: 20px;
-            margin-top: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-        }
-
-        .section-title {
-            font-size: 20px;
-            margin-bottom: 10px;
-        }
-
-        .progress {
-            background: #e5e7eb;
-            height: 18px;
-            border-radius: 10px;
-            overflow: hidden;
-            margin-top: 5px;
-        }
-
-        .progress-bar {
-            background: #22c55e;
-            height: 100%;
+        button:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
         }
 
         ul {
             margin-top: 5px;
+            color: var(--text);
         }
 
-        .loading {
-            font-style: italic;
-            color: #555;
+        b {
+            color: var(--muted);
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+
+        /* Progress UI */
+        .progress-bar-container {
+            background: var(--surface-2);
+            height: 10px;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 14px 0 8px;
+        }
+
+        .progress-bar-fill {
+            background: var(--accent);
+            height: 100%;
+            width: 0%;
+            border-radius: 10px;
+            transition: width 0.5s ease;
+        }
+
+        .progress-pct {
+            font-size: 13px;
+            color: var(--muted);
+            margin-bottom: 16px;
+        }
+
+        .step-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .step-list li {
+            padding: 6px 0;
+            font-size: 15px;
+            color: var(--muted);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .step-list li.done {
+            color: var(--success);
+        }
+
+        .step-list li.active {
+            color: var(--accent);
+        }
+
+        .step-icon {
+            width: 18px;
+            display: inline-block;
+            text-align: center;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to   { transform: rotate(360deg); }
+        }
+
+        .spin {
+            display: inline-block;
+            animation: spin 1s linear infinite;
+        }
+
+        .error-msg {
+            color: var(--danger);
+            margin-top: 10px;
         }
     </style>
-
 </head>
 
 <body>
-
     <div class="container">
 
         <h1>AI Job Evaluator</h1>
 
         <div class="card">
-
             <h3>Job Description</h3>
             <textarea id="jd" rows="10"></textarea>
 
             <h3>CV</h3>
             <textarea id="cv" rows="10"></textarea>
 
-            <button onclick="run()">Analyze</button>
+            <button id="analyze-btn" onclick="run()">Analyze</button>
+        </div>
 
+        <!-- Progress UI (hidden until analysis starts) -->
+        <div class="card" id="progress-ui" style="display:none">
+            <div class="section-title">Analyzing...</div>
+            <div class="progress-bar-container">
+                <div class="progress-bar-fill" id="progress-fill"></div>
+            </div>
+            <div class="progress-pct" id="progress-pct">0%</div>
+            <ul class="step-list" id="step-list">
+                <li id="step-1"><span class="step-icon">·</span> Job match analysis</li>
+                <li id="step-2"><span class="step-icon">·</span> Market research</li>
+                <li id="step-3"><span class="step-icon">·</span> Salary estimation</li>
+                <li id="step-4"><span class="step-icon">·</span> Career evaluation</li>
+            </ul>
         </div>
 
         <div id="result"></div>
@@ -101,7 +203,7 @@
     <script>
 
         function renderList(items) {
-            if (!items) return "<i>None</i>"
+            if (!items) return "<i style='color:var(--muted)'>None</i>"
             if (Array.isArray(items)) {
                 return "<ul>" + items.map(x => "<li>" + x + "</li>").join("") + "</ul>"
             }
@@ -109,139 +211,202 @@
         }
 
         function renderObject(obj) {
-
             if (typeof obj !== "object") return obj
-
             let html = "<ul>"
-
             for (const key in obj) {
                 html += "<li><b>" + key + "</b>: " + renderObject(obj[key]) + "</li>"
             }
-
             html += "</ul>"
-
             return html
         }
 
-        async function run() {
+        function showProgress() {
+            document.getElementById("progress-ui").style.display = "block"
+            document.getElementById("result").innerHTML = ""
+            document.getElementById("analyze-btn").disabled = true
+        }
 
+        function hideProgress() {
+            document.getElementById("progress-ui").style.display = "none"
+            document.getElementById("analyze-btn").disabled = false
+        }
+
+        function resetSteps() {
+            for (let i = 1; i <= 4; i++) {
+                const li = document.getElementById("step-" + i)
+                li.className = ""
+                li.querySelector(".step-icon").innerHTML = "·"
+            }
+            document.getElementById("progress-fill").style.width = "0%"
+            document.getElementById("progress-pct").textContent = "0%"
+        }
+
+        function handleProgress(payload) {
+            const { step, total, label } = payload
+
+            // Mark previous step done
+            if (step > 1) {
+                const prev = document.getElementById("step-" + (step - 1))
+                prev.className = "done"
+                prev.querySelector(".step-icon").innerHTML = "✓"
+            }
+
+            // Mark current step active
+            const current = document.getElementById("step-" + step)
+            current.className = "active"
+            current.querySelector(".step-icon").innerHTML = '<span class="spin">⟳</span>'
+
+            const pct = Math.round((step - 1) / total * 100)
+            document.getElementById("progress-fill").style.width = pct + "%"
+            document.getElementById("progress-pct").textContent = pct + "%"
+        }
+
+        function handleResult(json) {
+            // Mark all steps done
+            for (let i = 1; i <= 4; i++) {
+                const li = document.getElementById("step-" + i)
+                li.className = "done"
+                li.querySelector(".step-icon").innerHTML = "✓"
+            }
+            document.getElementById("progress-fill").style.width = "100%"
+            document.getElementById("progress-pct").textContent = "100%"
+
+            setTimeout(() => {
+                hideProgress()
+                renderCards(json)
+            }, 600)
+        }
+
+        function handleError(payload) {
+            hideProgress()
             document.getElementById("result").innerHTML =
-                "<div class='card'>Analyzing...</div>"
+                "<div class='card'><div class='error-msg'>Error: " + (payload.message || "Unknown error") + "</div></div>"
+        }
 
-            const jd = document.getElementById("jd").value
-            const cv = document.getElementById("cv").value
-
-            const res = await fetch("/analyze", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    cv: cv,
-                    job_description: jd
-                })
-            })
-
-            const data = await res.json()
-
-            let json = data.result
-
+        function renderCards(json) {
             let html = ""
 
             if (json.match_score) {
-
                 html += `
- <div class="card">
- <div class="section-title">Candidate Match</div>
-
- <b>Match Score</b><br>
- ${json.match_score}%
-
- <h4>Key Matches</h4>
- ${renderList(json.key_matches)}
-
- <h4>Skill Gaps</h4>
- ${renderList(json.skill_gaps)}
-
- <h4>Estimated Seniority</h4>
- ${json.seniority_estimate || ""}
- </div>
- `
+<div class="card">
+<div class="section-title">Candidate Match</div>
+<b>Match Score</b><br>
+<div style="font-size:2em;color:var(--accent);margin:6px 0">${json.match_score}%</div>
+<h4>Key Matches</h4>
+${renderList(json.key_matches)}
+<h4>Skill Gaps</h4>
+${renderList(json.skill_gaps)}
+<h4>Estimated Seniority</h4>
+${json.seniority_estimate || ""}
+</div>`
             }
 
             if (json.company_summary) {
-
                 html += `
- <div class="card">
- <div class="section-title">Market Research</div>
-
- <b>Company Summary</b><br>
- ${json.company_summary || ""}
-
- <br><br>
-
- <b>Company Health</b><br>
- ${json.company_health || ""}
-
- <br><br>
-
- <b>Company Culture</b><br>
- ${json.company_culture || ""}
- </div>
- `
+<div class="card">
+<div class="section-title">Market Research</div>
+<b>Company Summary</b><br>
+<p>${json.company_summary || ""}</p>
+<b>Company Health</b><br>
+<p>${json.company_health || ""}</p>
+<b>Company Culture</b><br>
+<p>${json.company_culture || ""}</p>
+</div>`
             }
 
             html += `
 <div class="card">
 <div class="section-title">Salary Estimate</div>
-
 <b>Estimated Range</b><br>
-${json.salary_low} - ${json.salary_high} ${json.currency}
-
-<br><br>
-
+<div style="font-size:1.5em;color:var(--accent);margin:6px 0">${json.salary_low} – ${json.salary_high} ${json.currency}</div>
 <b>Confidence</b><br>
-${json.confidence}
-
-<br><br>
-
+<p>${json.confidence}</p>
 <b>Sources</b>
 ${renderList(json.sources)}
-
-</div>
-`
+</div>`
 
             if (json.offer_probability || json.recommendation) {
-
                 html += `
- <div class="card">
- <div class="section-title">Career Evaluation</div>
-
- <b>Offer Probability</b><br>
- ${json.offer_probability || ""}
-
- <br><br>
-
- <b>Career Value</b><br>
- ${renderObject(json.career_value)}
-
- <br><br>
-
- <b>Risks</b>
- ${renderList(json.risks)}
-
- <br>
-
- <b>Recommendation</b><br>
- ${json.recommendation || ""}
- </div>
- `
+<div class="card">
+<div class="section-title">Career Evaluation</div>
+<b>Offer Probability</b><br>
+<div style="font-size:1.5em;color:var(--accent);margin:6px 0">${json.offer_probability || ""}</div>
+<b>Career Value</b><br>
+<p>${renderObject(json.career_value)}</p>
+<b>Risks</b>
+${renderList(json.risks)}
+<b>Recommendation</b><br>
+<p>${json.recommendation || ""}</p>
+</div>`
             }
 
             document.getElementById("result").innerHTML = html
+        }
 
+        // SSE line parser
+        function parseSSEChunk(raw) {
+            const events = []
+            const blocks = raw.split("\n\n")
+            for (const block of blocks) {
+                if (!block.trim()) continue
+                let eventType = "message", data = ""
+                for (const line of block.split("\n")) {
+                    if (line.startsWith("event: ")) eventType = line.slice(7).trim()
+                    else if (line.startsWith("data: ")) data = line.slice(6).trim()
+                }
+                if (data) events.push({ eventType, data })
+            }
+            return events
+        }
+
+        async function run() {
+            const jd = document.getElementById("jd").value
+            const cv = document.getElementById("cv").value
+
+            resetSteps()
+            showProgress()
+
+            let res
+            try {
+                res = await fetch("/analyze", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ cv, job_description: jd })
+                })
+            } catch (e) {
+                handleError({ message: "Network error: " + e.message })
+                return
+            }
+
+            const reader = res.body.getReader()
+            const decoder = new TextDecoder()
+            let buffer = ""
+
+            while (true) {
+                const { done, value } = await reader.read()
+                if (done) break
+
+                buffer += decoder.decode(value, { stream: true })
+
+                // Keep incomplete event in buffer
+                const boundary = buffer.lastIndexOf("\n\n")
+                if (boundary === -1) continue
+
+                const complete = buffer.slice(0, boundary + 2)
+                buffer = buffer.slice(boundary + 2)
+
+                for (const { eventType, data } of parseSSEChunk(complete)) {
+                    let payload
+                    try { payload = JSON.parse(data) } catch { continue }
+
+                    if (eventType === "progress") handleProgress(payload)
+                    else if (eventType === "result") handleResult(payload)
+                    else if (eventType === "error") handleError(payload)
+                }
+            }
         }
 
     </script>
 
 </body>
-
 </html>
