@@ -318,11 +318,12 @@ ${json.seniority_estimate || ""}
 <div class="card">
 <div class="section-title">Salary Estimate</div>
 <b>Estimated Range</b><br>
-<div style="font-size:1.5em;color:var(--accent);margin:6px 0">${json.salary_low} – ${json.salary_high} ${json.currency}</div>
+<div style="font-size:1.5em;color:var(--accent);margin:6px 0">${(json.salary_low || 0).toLocaleString()} – ${(json.salary_high || 0).toLocaleString()} <span style="font-size:0.6em;color:var(--muted)">${json.unit || json.currency}</span></div>
 <b>Confidence</b><br>
 <p>${json.confidence}</p>
 <b>Sources</b>
 ${renderList(json.sources)}
+${json.reasoning ? `<b>Reasoning</b><br><p style="color:var(--muted);font-size:13px">${json.reasoning}</p>` : ""}
 </div>`
 
             if (json.offer_probability || json.recommendation) {

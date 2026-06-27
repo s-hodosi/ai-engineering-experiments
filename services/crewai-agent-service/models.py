@@ -25,6 +25,8 @@ class SalaryEstimation(BaseModel):
     salary_low: int
     salary_high: int
     currency: str
+    unit: str
     confidence: str
     sources: List[str]
+    reasoning: str
     
