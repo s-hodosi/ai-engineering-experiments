@@ -1,0 +1,4 @@
+tavily-python
+litellm
+apscheduler
+python-dotenv
