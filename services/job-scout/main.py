@@ -32,7 +32,9 @@ _PROFILE_PATH = os.path.join(_SERVICE_DIR, "profile.md")
 def run_once():
     print("[main] Scout run starting...")
 
-    jobs = search(os.getenv("TAVILY_API_KEY"))
+    max_age_days = int(os.getenv("FRESHNESS_MAX_AGE_DAYS", "3"))
+    max_published_days = int(os.getenv("FRESHNESS_MAX_PUBLISHED_DAYS", "7"))
+    jobs = search(os.getenv("TAVILY_API_KEY"), max_age_days=max_age_days, max_published_days=max_published_days)
     new_jobs = [j for j in jobs if not is_seen(j["url"], _DB_PATH)]
     print(f"[main] {len(new_jobs)} unseen jobs to evaluate")
 

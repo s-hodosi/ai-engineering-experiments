@@ -4,6 +4,7 @@ Does not send email. Use this to verify the pipeline before setting up Gmail.
 """
 import os
 import sys
+sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 from dotenv import load_dotenv
 
 _DIR = os.path.dirname(os.path.abspath(__file__))
