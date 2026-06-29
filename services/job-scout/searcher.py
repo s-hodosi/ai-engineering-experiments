@@ -20,11 +20,6 @@ _TITLE_RE = re.compile(
     re.IGNORECASE,
 )
 
-_LOCATION_RE = re.compile(
-    r'\b(remote|budapest|emea|europe|hungary|hybrid|eu\b)',
-    re.IGNORECASE,
-)
-
 # Matches: "2 days ago", "5 months ago", "Posted 3 weeks ago", "Reposted 1 day ago", etc.
 _POSTED_RE = re.compile(
     r'(?:(?:Posted|Reposted)\s+)?(\d+)\s+(hour|day|week|month)s?\s+ago',
@@ -74,13 +69,9 @@ def _is_individual_job(url: str) -> bool:
 def _passes_prefilter(result: dict, max_age_days: int, max_published_days: int) -> bool:
     url = result.get("url", "")
     title = result.get("title", "")
-    content = result.get("content", "")
     if not _is_individual_job(url):
         return False
     if not _TITLE_RE.search(title):
-        return False
-    location_text = title + " " + content + " " + url
-    if not _LOCATION_RE.search(location_text):
         return False
     return _is_fresh(result, max_age_days, max_published_days)
 

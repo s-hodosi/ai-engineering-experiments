@@ -20,10 +20,11 @@ def _validate_config():
         sys.exit(1)
 
 
+from adzuna_searcher import search as adzuna_search
 from db import init_db, is_seen, mark_seen
 from filter import RelevanceFilter
 from notifier import Notifier
-from searcher import search
+from searcher import search as tavily_search
 
 _DB_PATH = os.path.join(_SERVICE_DIR, "jobs.db")
 _PROFILE_PATH = os.path.join(_SERVICE_DIR, "profile.md")
@@ -34,8 +35,11 @@ def run_once():
 
     max_age_days = int(os.getenv("FRESHNESS_MAX_AGE_DAYS", "3"))
     max_published_days = int(os.getenv("FRESHNESS_MAX_PUBLISHED_DAYS", "7"))
-    jobs = search(os.getenv("TAVILY_API_KEY"), max_age_days=max_age_days, max_published_days=max_published_days)
-    new_jobs = [j for j in jobs if not is_seen(j["url"], _DB_PATH)]
+
+    tavily_jobs = tavily_search(os.getenv("TAVILY_API_KEY"), max_age_days=max_age_days, max_published_days=max_published_days)
+    adzuna_jobs = adzuna_search(os.getenv("ADZUNA_APP_ID"), os.getenv("ADZUNA_APP_KEY"), max_age_days=max_age_days)
+    all_jobs = {j["url"]: j for j in tavily_jobs + adzuna_jobs}.values()
+    new_jobs = [j for j in all_jobs if not is_seen(j["url"], _DB_PATH)]
     print(f"[main] {len(new_jobs)} unseen jobs to evaluate")
 
     if not new_jobs:
@@ -70,11 +74,11 @@ def main():
 
     from apscheduler.schedulers.blocking import BlockingScheduler
 
-    interval_hours = int(os.getenv("SCHEDULE_INTERVAL_HOURS", "6"))
-    print(f"[main] Starting scheduler (every {interval_hours}h). Ctrl+C to stop.")
+    interval_minutes = int(os.getenv("SCHEDULE_INTERVAL_MINUTES", "30"))
+    print(f"[main] Starting scheduler (every {interval_minutes}min). Ctrl+C to stop.")
 
     scheduler = BlockingScheduler()
-    scheduler.add_job(run_once, "interval", hours=interval_hours)
+    scheduler.add_job(run_once, "interval", minutes=interval_minutes)
 
     def _shutdown(signum, frame):
         print("[main] Shutting down...")

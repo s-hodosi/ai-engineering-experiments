@@ -10,17 +10,20 @@ from dotenv import load_dotenv
 _DIR = os.path.dirname(os.path.abspath(__file__))
 load_dotenv(os.path.join(_DIR, "config.env"))
 
+from adzuna_searcher import search as adzuna_search
 from db import init_db, is_seen, mark_seen
 from filter import RelevanceFilter
-from searcher import search
+from searcher import search as tavily_search
 
 DB_PATH = os.path.join(_DIR, "test_jobs.db")
 init_db(DB_PATH)
 
 print("=== Job Scout Smoke Test ===\n")
 
-jobs = search(os.getenv("TAVILY_API_KEY"))
-print(f"Found {len(jobs)} jobs after pre-filter\n")
+tavily_jobs = tavily_search(os.getenv("TAVILY_API_KEY"))
+adzuna_jobs = adzuna_search(os.getenv("ADZUNA_APP_ID"), os.getenv("ADZUNA_APP_KEY"))
+jobs = list({j["url"]: j for j in tavily_jobs + adzuna_jobs}.values())
+print(f"Found {len(jobs)} jobs after pre-filter (Tavily: {len(tavily_jobs)}, Adzuna: {len(adzuna_jobs)})\n")
 
 new_jobs = [j for j in jobs if not is_seen(j["url"], DB_PATH)]
 print(f"{len(new_jobs)} not yet seen\n")
