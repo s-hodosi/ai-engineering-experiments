@@ -1,38 +1,38 @@
 ## Purpose
 
-Periodic Tavily-based LinkedIn job search with title and location pre-filtering, feeding the relevance filter pipeline.
+Multi-source job search (Tavily + Adzuna) with title pre-filtering, feeding the relevance filter pipeline.
 
 ## Requirements
 
-### Requirement: Periodic LinkedIn job search via Tavily
-The system SHALL query Tavily search with a fixed set of query templates targeting LinkedIn job listings, on a configurable recurring schedule (default every 4-6 hours). Queries SHALL cover all target role title variants and location variants. Each query SHALL include an `after:<date>` operator computed as today minus `FRESHNESS_MAX_AGE_DAYS` (default 3) to restrict Google's index to recently crawled pages.
+### Requirement: Periodic job search via multiple sources
+The system SHALL query both Tavily (LinkedIn-specific, via Google index) and Adzuna API on a configurable recurring schedule (default every 30 minutes). Results from all sources are merged and passed through deduplication before pre-filtering. Tavily serves as a complementary fallback for LinkedIn-only posts not indexed by Adzuna. Each Tavily query SHALL include an `after:<date>` operator computed as today minus `FRESHNESS_MAX_AGE_DAYS` (default 3).
 
-#### Scenario: All query variants are executed each run
+#### Scenario: All sources are queried each run
 - **WHEN** the scheduler triggers a search run
-- **THEN** the system executes all configured query templates against Tavily and collects results
+- **THEN** the system executes all Tavily query templates and all Adzuna API queries, collecting results from both
 
-#### Scenario: Results include URL, title, and snippet
-- **WHEN** Tavily returns results for a query
-- **THEN** each result SHALL include at minimum: the job page URL, job title, and a text snippet
+#### Scenario: Results from all sources are merged before deduplication
+- **WHEN** both sources return results
+- **THEN** the system merges all results and deduplicates by URL before applying the pre-filter
 
-#### Scenario: Freshness filter applied
+#### Scenario: Schedule interval is configurable in minutes
+- **WHEN** `SCHEDULE_INTERVAL_MINUTES` is set in config
+- **THEN** the scheduler runs at that interval (default 30 minutes)
+
+#### Scenario: Freshness filter applied to Tavily queries
 - **WHEN** constructing Tavily queries
 - **THEN** the system SHALL append `after:<YYYY-MM-DD>` to each query, where the date is today minus `FRESHNESS_MAX_AGE_DAYS`
 
-### Requirement: Title and location pre-filter
-The system SHALL apply a metadata-only pre-filter to Tavily results before any LLM calls, discarding results that clearly do not match target titles or locations.
+### Requirement: Title pre-filter
+The system SHALL apply a title-only metadata pre-filter to all job results before any LLM calls, discarding results whose title contains no variant of the target role titles. Location judgment is delegated entirely to the LLM filter.
 
 #### Scenario: Title does not match target roles
 - **WHEN** a result title contains no variant of Engineering Manager, Senior Engineering Manager, Director of Engineering, Head of Engineering, Team Lead, or Team Leader
 - **THEN** the result SHALL be discarded without an LLM call
 
-#### Scenario: Location does not match
-- **WHEN** a result metadata indicates an on-site-only location outside Budapest, or a non-EMEA geography
-- **THEN** the result SHALL be discarded without an LLM call
-
-#### Scenario: Ambiguous location passes pre-filter
-- **WHEN** location metadata is absent or ambiguous (e.g. "Remote" with no region)
-- **THEN** the result SHALL pass to the LLM filter stage for further evaluation
+#### Scenario: Title matches — result proceeds regardless of location keywords
+- **WHEN** a result title matches a target role variant
+- **THEN** the result proceeds to the LLM filter regardless of whether location keywords (EMEA, Europe, etc.) appear in the metadata
 
 ### Requirement: Snippet-based posting age filter
 The system SHALL parse age text from Tavily snippets (e.g. "5 months ago", "Posted 2 weeks ago") and discard results whose parsed age exceeds `FRESHNESS_MAX_AGE_DAYS` (default 3). Results whose snippet contains "no longer accepting applications" SHALL also be discarded.
