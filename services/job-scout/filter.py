@@ -37,6 +37,7 @@ Rules:
 - SKIP: clear disqualifier — a hard requirement the candidate demonstrably lacks
 - When in doubt, use UNSURE — missed opportunities are worse than extra emails
 - Both technical EM roles and senior managing-managers roles are valid targets; do not skip based on role being "too technical" or "too senior"
+- If the job description text is not written in English or Hungarian, return SKIP
 """
 
 
