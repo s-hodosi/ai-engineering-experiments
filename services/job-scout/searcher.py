@@ -22,11 +22,11 @@ _TITLE_RE = re.compile(
 
 # Matches: "2 days ago", "5 months ago", "Posted 3 weeks ago", "Reposted 1 day ago", etc.
 _POSTED_RE = re.compile(
-    r'(?:(?:Posted|Reposted)\s+)?(\d+)\s+(hour|day|week|month)s?\s+ago',
+    r'(?:(?:Posted|Reposted)\s+)?(\d+)\s+(hour|day|week|month|year)s?\s+ago',
     re.IGNORECASE,
 )
 
-_DAYS_PER_UNIT = {"hour": 1/24, "day": 1, "week": 7, "month": 30}
+_DAYS_PER_UNIT = {"hour": 1/24, "day": 1, "week": 7, "month": 30, "year": 365}
 
 
 def _parse_snippet_age_days(snippet: str) -> float | None:
