@@ -1,6 +1,6 @@
 """
-Smoke test: runs search → dedup → LLM filter, prints results.
-Does not send email. Use this to verify the pipeline before setting up Gmail.
+Smoke test: runs email fetch → LLM filter, prints results.
+Does not send email. Use this to verify the pipeline before running the scheduler.
 """
 import os
 import sys
@@ -10,35 +10,30 @@ from dotenv import load_dotenv
 _DIR = os.path.dirname(os.path.abspath(__file__))
 load_dotenv(os.path.join(_DIR, "config.env"))
 
-from adzuna_searcher import search as adzuna_search
 from db import init_db, is_seen, mark_seen
 from filter import RelevanceFilter
-from searcher import search as tavily_search
+from linkedin_email_source import fetch_jobs
 
 DB_PATH = os.path.join(_DIR, "test_jobs.db")
 init_db(DB_PATH)
 
 print("=== Job Scout Smoke Test ===\n")
 
-tavily_jobs = tavily_search(os.getenv("TAVILY_API_KEY"))
-adzuna_jobs = adzuna_search(os.getenv("ADZUNA_APP_ID"), os.getenv("ADZUNA_APP_KEY"))
-jobs = list({j["url"]: j for j in tavily_jobs + adzuna_jobs}.values())
-print(f"Found {len(jobs)} jobs after pre-filter (Tavily: {len(tavily_jobs)}, Adzuna: {len(adzuna_jobs)})\n")
+jobs = fetch_jobs(os.getenv("GMAIL_ADDRESS"), os.getenv("GMAIL_APP_PASSWORD"), DB_PATH)
+print(f"Found {len(jobs)} new jobs from LinkedIn alerts\n")
 
-new_jobs = [j for j in jobs if not is_seen(j["url"], DB_PATH)]
-print(f"{len(new_jobs)} not yet seen\n")
-
-if not new_jobs:
+if not jobs:
     print("No new jobs to evaluate. Try deleting test_jobs.db to reset.")
     sys.exit(0)
 
 f = RelevanceFilter(os.path.join(_DIR, "profile.md"), os.getenv("GOOGLE_API_KEY"))
 
-for job in new_jobs[:3]:  # cap at 3 LLM calls for the smoke test
+for job in jobs[:3]:  # cap at 3 LLM calls for the smoke test
     verdict, explanation = f.evaluate(job)
-    mark_seen(job["url"], job["title"], "", verdict, DB_PATH)
-    print(f"[{verdict}] {job['title']}")
+    mark_seen(job["url"], job["title"], job.get("company", ""), verdict, DB_PATH)
+    print(f"[{verdict}] {job['title']} @ {job.get('company', '?')}")
     print(f"  URL: {job['url']}")
+    print(f"  Snippet: {job['snippet'][:200]}...")
     print(f"  {explanation[:200]}...")
     print()
 

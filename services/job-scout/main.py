@@ -15,7 +15,7 @@ if sys.stdout is None or not sys.stdout.isatty():
 
 load_dotenv(os.path.join(_SERVICE_DIR, "config.env"))
 
-_REQUIRED_KEYS = ["TAVILY_API_KEY", "GOOGLE_API_KEY", "GMAIL_ADDRESS", "GMAIL_APP_PASSWORD"]
+_REQUIRED_KEYS = ["GOOGLE_API_KEY", "GMAIL_ADDRESS", "GMAIL_APP_PASSWORD"]
 
 
 def _validate_config():
@@ -26,11 +26,10 @@ def _validate_config():
         sys.exit(1)
 
 
-from adzuna_searcher import search as adzuna_search
-from db import init_db, is_seen, mark_seen
+from db import init_db, mark_seen
 from filter import RelevanceFilter
+from linkedin_email_source import fetch_jobs
 from notifier import Notifier
-from searcher import search as tavily_search
 
 _DB_PATH = os.path.join(_SERVICE_DIR, "jobs.db")
 _PROFILE_PATH = os.path.join(_SERVICE_DIR, "profile.md")
@@ -39,31 +38,30 @@ _PROFILE_PATH = os.path.join(_SERVICE_DIR, "profile.md")
 def run_once():
     print("[main] Scout run starting...")
 
-    max_age_days = int(os.getenv("FRESHNESS_MAX_AGE_DAYS", "3"))
-    max_published_days = int(os.getenv("FRESHNESS_MAX_PUBLISHED_DAYS", "7"))
+    jobs = fetch_jobs(
+        os.getenv("GMAIL_ADDRESS"),
+        os.getenv("GMAIL_APP_PASSWORD"),
+        _DB_PATH,
+    )
 
-    tavily_jobs = tavily_search(os.getenv("TAVILY_API_KEY"), max_age_days=max_age_days, max_published_days=max_published_days)
-    adzuna_jobs = adzuna_search(os.getenv("ADZUNA_APP_ID"), os.getenv("ADZUNA_APP_KEY"), max_age_days=max_age_days)
-    all_jobs = {j["url"]: j for j in tavily_jobs + adzuna_jobs}.values()
-    new_jobs = [j for j in all_jobs if not is_seen(j["url"], _DB_PATH)]
-    print(f"[main] {len(new_jobs)} unseen jobs to evaluate")
-
-    if not new_jobs:
+    if not jobs:
         print("[main] Nothing new. Done.")
         return
+
+    print(f"[main] {len(jobs)} new jobs to evaluate")
 
     relevance_filter = RelevanceFilter(_PROFILE_PATH, os.getenv("GOOGLE_API_KEY"))
     notifier = Notifier(os.getenv("GMAIL_ADDRESS"), os.getenv("GMAIL_APP_PASSWORD"))
 
     sent = 0
-    for job in new_jobs:
+    for job in jobs:
         verdict, explanation = relevance_filter.evaluate(job)
-        mark_seen(job["url"], job["title"], "", verdict, _DB_PATH)
+        mark_seen(job["url"], job["title"], job.get("company", ""), verdict, _DB_PATH)
         if verdict in ("RELEVANT", "UNSURE"):
             notifier.send(job, verdict, explanation)
             sent += 1
 
-    print(f"[main] Done. {sent} emails sent out of {len(new_jobs)} evaluated.")
+    print(f"[main] Done. {sent} emails sent out of {len(jobs)} evaluated.")
 
 
 def main():

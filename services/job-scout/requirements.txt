@@ -1,4 +1,5 @@
-tavily-python
 litellm
 apscheduler
 python-dotenv
+requests
+beautifulsoup4

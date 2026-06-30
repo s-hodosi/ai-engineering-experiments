@@ -13,6 +13,12 @@ def init_db(path: str):
                 fetched_at TEXT
             )
         """)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS processed_emails (
+                message_id   TEXT PRIMARY KEY,
+                processed_at TEXT
+            )
+        """)
         conn.commit()
 
 
@@ -27,5 +33,22 @@ def mark_seen(url: str, title: str, company: str, verdict: str, path: str):
         conn.execute(
             "INSERT OR IGNORE INTO seen_jobs (url, title, company, verdict, fetched_at) VALUES (?, ?, ?, ?, ?)",
             (url, title, company, verdict, datetime.now(timezone.utc).isoformat()),
+        )
+        conn.commit()
+
+
+def is_email_processed(message_id: str, path: str) -> bool:
+    with sqlite3.connect(path) as conn:
+        row = conn.execute(
+            "SELECT 1 FROM processed_emails WHERE message_id = ?", (message_id,)
+        ).fetchone()
+    return row is not None
+
+
+def mark_email_processed(message_id: str, path: str):
+    with sqlite3.connect(path) as conn:
+        conn.execute(
+            "INSERT OR IGNORE INTO processed_emails (message_id, processed_at) VALUES (?, ?)",
+            (message_id, datetime.now(timezone.utc).isoformat()),
         )
         conn.commit()
