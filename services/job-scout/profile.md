@@ -31,7 +31,9 @@ Both profiles are valid:
 
 - Remote within EMEA / Europe (preferred)
 - Remote or hybrid in Budapest, Hungary
-- Roles listed as "Remote, UK" or similar single-country remote: include as UNSURE if the job description does not explicitly restrict to local residents
+- Candidate is based in Hungary, EU. Not open to relocation.
+- "Remote, UK" or any role that explicitly restricts to UK residents (e.g. "for those based in the UK", "must be UK resident", "right to work in UK required") → SKIP
+- "Remote UK/EU", "Remote EMEA", "Remote Europe", "Remote (global)", or any multi-region scope that includes the EU → RELEVANT on location
 
 ## Hard Disqualifiers
 

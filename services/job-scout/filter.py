@@ -33,11 +33,16 @@ EXPLANATION: <one paragraph>
 
 Rules:
 - RELEVANT: strong match, candidate should read this immediately
-- UNSURE: possible match but something is unclear (location restriction, ambiguous role scope, borderline requirement)
+- UNSURE: possible match but something is unclear (ambiguous role scope, borderline requirement)
 - SKIP: clear disqualifier — a hard requirement the candidate demonstrably lacks
 - When in doubt, use UNSURE — missed opportunities are worse than extra emails
 - Both technical EM roles and senior managing-managers roles are valid targets; do not skip based on role being "too technical" or "too senior"
 - If the job description text is not written in English or Hungarian, return SKIP
+
+Location rules (candidate is in Hungary, EU — not open to relocation):
+- If the role is explicitly restricted to UK residents — e.g. "for those based in the UK", "must be based in the UK", "must be a UK resident", "right to work in the UK required" — return SKIP
+- If the role is listed as "Remote, UK" with no further restriction language, return UNSURE (company may hire internationally; restriction is not confirmed)
+- If the role is "Remote UK/EU", "Remote EMEA", "Remote Europe", "Remote (global)", or any multi-region scope that includes the EU, location is NOT a basis for SKIP — evaluate on role fit only
 """
 
 
