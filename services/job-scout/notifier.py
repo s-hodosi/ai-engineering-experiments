@@ -36,8 +36,8 @@ class Notifier:
 
     def send(self, job: dict, verdict: str, explanation: str):
         title = job.get("title", "Unknown Role")
-        company = _extract_company(title) or "Unknown Company"
-        location = _extract_location(job)
+        company = job.get("company") or _extract_company(title) or "Unknown Company"
+        location = job.get("location") or _extract_location(job)
         role = _clean_title(title)
 
         subject = f"[Job Scout] {role} – {company} ({location})"

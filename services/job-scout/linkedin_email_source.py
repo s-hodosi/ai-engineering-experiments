@@ -1,6 +1,7 @@
 import email
 import imaplib
 import re
+import time
 from datetime import datetime, timedelta
 
 import requests
@@ -143,6 +144,7 @@ def fetch_jobs(gmail_address: str, app_password: str, db_path: str) -> list[dict
     print(f"[linkedin] {len(msg_ids)} LinkedIn alert emails found in last {_LOOKBACK_DAYS}d")
 
     results: list[dict] = []
+    seen_this_run: set[str] = set()
 
     for msg_id_bytes in msg_ids:
         try:
@@ -171,10 +173,12 @@ def fetch_jobs(gmail_address: str, app_password: str, db_path: str) -> list[dict
 
         for job in parsed:
             canonical_url = job["canonical_url"]
-            if is_seen(canonical_url, db_path):
+            if canonical_url in seen_this_run or is_seen(canonical_url, db_path):
                 continue
+            seen_this_run.add(canonical_url)
 
             snippet = _fetch_jd(canonical_url)
+            time.sleep(1)
 
             results.append({
                 "url": canonical_url,
