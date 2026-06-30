@@ -7,6 +7,12 @@ from dotenv import load_dotenv
 
 _SERVICE_DIR = os.path.dirname(os.path.abspath(__file__))
 
+# When running without a terminal (Task Scheduler, pythonw), route all output to scout.log
+if sys.stdout is None or not sys.stdout.isatty():
+    _log_file = open(os.path.join(_SERVICE_DIR, "scout.log"), "a", buffering=1, encoding="utf-8")
+    sys.stdout = _log_file
+    sys.stderr = _log_file
+
 load_dotenv(os.path.join(_SERVICE_DIR, "config.env"))
 
 _REQUIRED_KEYS = ["TAVILY_API_KEY", "GOOGLE_API_KEY", "GMAIL_ADDRESS", "GMAIL_APP_PASSWORD"]
