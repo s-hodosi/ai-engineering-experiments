@@ -1,8 +1,4 @@
-## Purpose
-
-LLM-based relevance judgment (RELEVANT/UNSURE/SKIP) against a candidate profile, determining which jobs warrant email notification.
-
-## Requirements
+## MODIFIED Requirements
 
 ### Requirement: LLM relevance judgment against candidate profile
 The system SHALL pass each pre-filtered job (title, location, snippet) to a Gemini LLM call along with a candidate profile loaded from `profile.md`. The job's `location` field SHALL be explicitly interpolated into the prompt text sent to the LLM, not merely available on the job object — location-based filtering rules depend on the LLM actually seeing this value. When `location` is empty, the prompt SHALL still be sent, and the LLM falls back to inferring location from the snippet text. The LLM SHALL return a structured verdict: RELEVANT, UNSURE, or SKIP, plus a short explanation paragraph.
@@ -26,29 +22,3 @@ The system SHALL pass each pre-filtered job (title, location, snippet) to a Gemi
 #### Scenario: Structured location field is used when present
 - **WHEN** the job record has a non-empty `location` field (e.g. "Hungary (Remote)") sourced from the alert email
 - **THEN** that value SHALL appear in the prompt sent to the LLM, so location-filtering rules are evaluated against it rather than solely against JD snippet text
-
-### Requirement: Candidate profile loaded from editable file
-The system SHALL load the candidate profile from `profile.md` at startup. The file SHALL be plain text and editable without code changes.
-
-#### Scenario: Profile file is read at startup
-- **WHEN** the service starts
-- **THEN** the content of `profile.md` is loaded into memory and used for all LLM filter calls in that run
-
-#### Scenario: Profile file is missing
-- **WHEN** `profile.md` does not exist at startup
-- **THEN** the service SHALL fail with a clear error message indicating the missing file
-
-### Requirement: UNSURE and RELEVANT verdicts both trigger notification
-The system SHALL treat both RELEVANT and UNSURE as notification-worthy. SKIP verdicts SHALL be silently discarded.
-
-#### Scenario: RELEVANT job triggers email
-- **WHEN** the LLM returns RELEVANT
-- **THEN** the job is passed to the notification stage
-
-#### Scenario: UNSURE job triggers email
-- **WHEN** the LLM returns UNSURE
-- **THEN** the job is passed to the notification stage with the UNSURE verdict visible in the email
-
-#### Scenario: SKIP job is discarded
-- **WHEN** the LLM returns SKIP
-- **THEN** the job is marked as seen in the database and no email is sent

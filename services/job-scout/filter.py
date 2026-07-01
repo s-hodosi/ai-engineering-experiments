@@ -19,6 +19,7 @@ _PROMPT_TEMPLATE = """\
 
 Title: {title}
 URL: {url}
+Location: {location}
 
 Description/Snippet:
 {snippet}
@@ -67,6 +68,7 @@ class RelevanceFilter:
             profile=self._profile,
             title=job.get("title", ""),
             url=job.get("url", ""),
+            location=job.get("location", ""),
             snippet=job.get("snippet", ""),
         )
         try:

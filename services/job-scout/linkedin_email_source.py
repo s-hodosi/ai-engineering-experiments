@@ -184,6 +184,7 @@ def fetch_jobs(gmail_address: str, app_password: str, db_path: str) -> list[dict
                 "url": canonical_url,
                 "title": job["title"],
                 "company": job["company"],
+                "location": job["location"],
                 "snippet": snippet,
                 "source": "linkedin-email",
             })
