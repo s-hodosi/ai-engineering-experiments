@@ -1,8 +1,4 @@
-## Purpose
-
-Geographic eligibility rules applied during job filtering, determining which roles are skippable on location grounds and which are eligible based on the candidate's Hungary/EU base and remote-scope signals in the job description.
-
-## Requirements
+## MODIFIED Requirements
 
 ### Requirement: Non-Hungary country-specific roles are skipped
 The filter SHALL return SKIP for any role whose job description names a specific single country other than Hungary as the required location, residency, work authorization, or physical presence — regardless of whether the role is otherwise remote, on-site, or hybrid.
@@ -35,20 +31,12 @@ This requirement does NOT apply when Hungary is mentioned (alone or as one of se
 - **WHEN** the job description names Hungary as the required location, or as one of several eligible countries
 - **THEN** location SHALL NOT be a basis for SKIP; verdict is determined by role fit
 
-### Requirement: Multi-region remote roles including EU are treated as relevant on location
-The filter SHALL treat a role as location-eligible (not skipped on geographic grounds) when the job description indicates a multi-region remote scope that includes the EU or EMEA.
+## REMOVED Requirements
 
-Eligible patterns include:
-- "Remote UK/EU"
-- "Remote EMEA"
-- "Remote Europe"
-- "Remote globally"
+### Requirement: UK-only remote roles are skipped
+**Reason**: Superseded by "Non-Hungary country-specific roles are skipped", which generalizes this rule to any country other than Hungary instead of special-casing the UK.
+**Migration**: No action needed — the UK is now covered as one instance of the general rule. The previous "Remote, UK with no restriction language → UNSURE" carve-out is retired; that case now returns SKIP under the new requirement.
 
-#### Scenario: JD lists UK/EU remote scope
-- **WHEN** the job description specifies "Remote UK/EU" or "Remote EMEA" or similar multi-region scope including Europe
-- **THEN** location SHALL NOT be a basis for SKIP; verdict is determined by role fit
-
-#### Scenario: JD lists global remote
-- **WHEN** the job description specifies "Remote (global)" or "Fully remote" without geographic restriction
-- **THEN** location SHALL NOT be a basis for SKIP
-
+### Requirement: Candidate location and relocation preference are encoded in filtering rules
+**Reason**: Superseded by "Non-Hungary country-specific roles are skipped", which extends physical-presence SKIP scope from "outside Hungary/EU" to "outside Hungary" and folds the on-site/hybrid case into the same general rule as remote-with-country-label roles.
+**Migration**: No action needed — on-site/hybrid roles requiring presence in a non-Hungary country (EU or not) are now covered by the new requirement.

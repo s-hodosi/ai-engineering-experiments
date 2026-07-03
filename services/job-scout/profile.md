@@ -32,8 +32,9 @@ Both profiles are valid:
 - Remote within EMEA / Europe (preferred)
 - Remote or hybrid in Budapest, Hungary
 - Candidate is based in Hungary, EU. Not open to relocation.
-- "Remote, UK" or any role that explicitly restricts to UK residents (e.g. "for those based in the UK", "must be UK resident", "right to work in UK required") → SKIP
+- Any role naming a specific single country other than Hungary as the required location, residency, work authorization, or physical presence → SKIP. This covers explicit restrictions (e.g. "for those based in the UK", "must be based in Germany", "must be a UK resident", "right to work in Ireland required"), bare single-country remote labels with no further restriction language (e.g. "Remote, UK", "Remote, Germany", "Remote, US"), on-site/hybrid presence requirements (e.g. "on-site in Berlin required", "hybrid, San Francisco office"), and eligible-country lists that omit Hungary (e.g. "open to candidates based in Germany, Poland, or the Netherlands")
 - "Remote UK/EU", "Remote EMEA", "Remote Europe", "Remote (global)", or any multi-region scope that includes the EU → RELEVANT on location
+- Hungary named as the required location, or as one of several eligible countries → RELEVANT on location
 
 ## Hard Disqualifiers
 

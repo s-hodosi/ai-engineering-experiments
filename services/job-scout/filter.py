@@ -41,9 +41,13 @@ Rules:
 - If the job description text is not written in English or Hungarian, return SKIP
 
 Location rules (candidate is in Hungary, EU — not open to relocation):
-- If the role is explicitly restricted to UK residents — e.g. "for those based in the UK", "must be based in the UK", "must be a UK resident", "right to work in the UK required" — return SKIP
-- If the role is listed as "Remote, UK" with no further restriction language, return UNSURE (company may hire internationally; restriction is not confirmed)
+- If the role names any specific single country other than Hungary as the required location, residency, work authorization, or physical presence, return SKIP. This includes:
+  - Explicit restrictions — e.g. "for those based in the UK", "must be based in Germany", "must be a UK resident", "right to work in Ireland required"
+  - A bare single-country remote label with no further restriction language — e.g. "Remote, UK", "Remote, Germany", "Remote, US"
+  - A requirement of on-site or hybrid physical presence in that country — e.g. "on-site in Berlin required", "hybrid, San Francisco office"
+  - A list of eligible countries that omits Hungary — e.g. "open to candidates based in Germany, Poland, or the Netherlands"
 - If the role is "Remote UK/EU", "Remote EMEA", "Remote Europe", "Remote (global)", or any multi-region scope that includes the EU, location is NOT a basis for SKIP — evaluate on role fit only
+- If Hungary is named as the required location, or as one of several eligible countries, location is NOT a basis for SKIP — evaluate on role fit only
 """
 
 
