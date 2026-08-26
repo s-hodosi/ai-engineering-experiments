@@ -29,25 +29,36 @@ def _clean_title(title: str) -> str:
     return title.strip()
 
 
+def _render_entry(job: dict, verdict: str, explanation: str) -> str:
+    title = job.get("title", "Unknown Role")
+    company = job.get("company") or _extract_company(title) or "Unknown Company"
+    location = job.get("location") or _extract_location(job)
+    role = _clean_title(title)
+
+    return (
+        f"[{verdict}] {role} – {company} ({location})\n\n"
+        f"{explanation}\n\n"
+        f"---\n"
+        f"Role:    {title}\n"
+        f"URL:     {job['url']}\n"
+    )
+
+
 class Notifier:
     def __init__(self, gmail_address: str, app_password: str):
         self.gmail_address = gmail_address
         self.app_password = app_password
 
-    def send(self, job: dict, verdict: str, explanation: str):
-        title = job.get("title", "Unknown Role")
-        company = job.get("company") or _extract_company(title) or "Unknown Company"
-        location = job.get("location") or _extract_location(job)
-        role = _clean_title(title)
+    def send_digest(self, entries: list[tuple[dict, str, str]]):
+        if not entries:
+            return
 
-        subject = f"[Job Scout] {role} – {company} ({location})"
+        n = len(entries)
+        subject = f"[Job Scout] {n} new match{'es' if n != 1 else ''}"
 
-        body = (
-            f"{verdict}\n\n"
-            f"{explanation}\n\n"
-            f"---\n"
-            f"Role:    {title}\n"
-            f"URL:     {job['url']}\n"
+        separator = "\n" + ("=" * 40) + "\n\n"
+        body = separator.join(
+            _render_entry(job, verdict, explanation) for job, verdict, explanation in entries
         )
 
         msg = MIMEMultipart("alternative")
@@ -62,4 +73,4 @@ class Notifier:
             smtp.login(self.gmail_address, self.app_password)
             smtp.sendmail(self.gmail_address, self.gmail_address, msg.as_string())
 
-        print(f"[notifier] Sent: {subject}")
+        print(f"[notifier] Sent digest: {subject}")

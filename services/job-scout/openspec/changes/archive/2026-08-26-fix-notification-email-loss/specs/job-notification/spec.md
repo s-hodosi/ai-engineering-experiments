@@ -1,8 +1,4 @@
-## Purpose
-
-Gmail SMTP email notification with AI relevance paragraph, sent as a single digest per scheduler run.
-
-## Requirements
+## MODIFIED Requirements
 
 ### Requirement: Digest email per scheduler run
 The system SHALL collect all RELEVANT and UNSURE jobs evaluated during a single scheduler run and send at most one digest email for that run, containing all of them, using Gmail SMTP with app password authentication. Sending and receiving address SHALL be the same (self-email). The system SHALL NOT send more than one notification email per scheduler run, regardless of how many jobs matched.
@@ -25,10 +21,3 @@ Each entry in the digest email SHALL include: role title, company name (if avail
 #### Scenario: Each entry in the digest identifies its role
 - **WHEN** a digest email is rendered
 - **THEN** each entry SHALL be clearly delimited and include its own title, company, location, verdict, job URL, and the LLM explanation paragraph
-
-### Requirement: Email credentials loaded from config
-The system SHALL load Gmail address and app password from `config.env`. The app password SHALL never be hardcoded.
-
-#### Scenario: Missing credentials fail with clear error
-- **WHEN** GMAIL_ADDRESS or GMAIL_APP_PASSWORD is not set in config.env
-- **THEN** the service SHALL fail at startup with a descriptive error message

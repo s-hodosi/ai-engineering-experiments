@@ -53,15 +53,18 @@ def run_once():
     relevance_filter = RelevanceFilter(_PROFILE_PATH, os.getenv("GOOGLE_API_KEY"))
     notifier = Notifier(os.getenv("GMAIL_ADDRESS"), os.getenv("GMAIL_APP_PASSWORD"))
 
-    sent = 0
+    entries = []
     for job in jobs:
         verdict, explanation = relevance_filter.evaluate(job)
         mark_seen(job["url"], job["title"], job.get("company", ""), verdict, _DB_PATH)
         if verdict in ("RELEVANT", "UNSURE"):
-            notifier.send(job, verdict, explanation)
-            sent += 1
+            entries.append((job, verdict, explanation))
 
-    print(f"[main] Done. {sent} emails sent out of {len(jobs)} evaluated.")
+    if entries:
+        notifier.send_digest(entries)
+        print(f"[main] Done. 1 digest email sent covering {len(entries)} of {len(jobs)} evaluated.")
+    else:
+        print(f"[main] Done. No matches, no email sent ({len(jobs)} evaluated).")
 
 
 def main():
