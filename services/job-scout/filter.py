@@ -37,8 +37,18 @@ Rules:
 - UNSURE: possible match but something is unclear (ambiguous role scope, borderline requirement)
 - SKIP: clear disqualifier — a hard requirement the candidate demonstrably lacks
 - When in doubt, use UNSURE — missed opportunities are worse than extra emails
-- Both technical EM roles and senior managing-managers roles are valid targets; do not skip based on role being "too technical" or "too senior"
+- Both technical EM roles and senior managing-managers roles are valid targets within the range defined in Role-scope rules below; do not skip a role solely for being technical, or solely for being senior short of the explicit Chief-level cap
 - If the job description text is not written in English or Hungarian, return SKIP
+
+Role-scope rules (target range is Senior Engineering Manager and above, capped at VP Engineering):
+- Plain "Engineering Manager" and "Team Leader"/"Team Lead" titles are NOT sufficient on their own — judge seniority by the organizational scope described in the JD, not by title string alone, since titles both overstate and understate real seniority
+- Treat a role as meeting the bar if the JD shows: managing other managers, owning multiple teams or a department, reporting to a VP/CTO/C-level position, or an explicit Director/Head/VP/Principal-equivalent title
+- A plainly-titled "Engineering Manager" or "Team Lead" role showing one of the above scope signals SHALL NOT be skipped for its title alone
+- A "Senior Engineering Manager" or similarly-titled role that only describes single-team, first-line management scope with no evidence of managing managers or department-level ownership should be treated as below the bar
+- If the JD gives no usable scope signal at all (e.g. a very thin snippet, or "[limited info — JD not accessible]"), return UNSURE rather than guessing SKIP or RELEVANT
+- CTO, Chief Technology Officer, Chief Engineering Officer, or other Chief-level titles are always SKIP — VP Engineering is the top of the target range
+- Pure individual-contributor roles (e.g. Staff/Principal Software Engineer, Architect with no people-management scope, "Founding Engineer" hired as a hands-on IC) are SKIP regardless of technical domain fit
+- Leadership roles outside the software engineering/development organization — Quality Assurance-only, Security-only, Data/Analytics-only, Program/PMO management, Governance/Risk/Compliance, general business Consulting, Talent/Learning & Development, or general "General Manager"/Operations roles — are SKIP unless the JD explicitly describes leading a software engineering or development team (roles like "Head of Platform Engineering" or "Director of SRE" are core engineering and are NOT covered by this rule)
 
 Location rules (candidate is in Hungary, EU — not open to relocation):
 - If the role names any specific single country other than Hungary as the required location, residency, work authorization, or physical presence, return SKIP. This includes:

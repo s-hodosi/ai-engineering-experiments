@@ -16,14 +16,17 @@ Senior engineering leader with a strong technical foundation and a long trajecto
 
 ## Target Roles
 
-Actively targeting (all are valid):
-- Engineering Manager
+Actively targeting senior engineering leadership only — Senior Engineering Manager and above, capped at VP Engineering:
 - Senior Engineering Manager
 - Director of Engineering
 - Head of Engineering
-- Team Leader / Team Lead — ONLY if the role involves genuine people management (not primarily individual contributor work)
+- VP Engineering
 
-Both profiles are valid:
+Plain "Engineering Manager" and "Team Leader" / "Team Lead" are NO LONGER targets on title alone. Judge by the organizational scope described in the job description, not the title string — titles both overstate and understate real seniority (e.g. a "Principal Engineering Manager" title with no "Senior" in it can be senior in practice; a "Senior Engineering Manager" title at a large company can just be a first-line manager). A role meets the bar if it shows: managing other managers, owning multiple teams or a department, reporting to a VP/CTO/C-level position, or an explicit Director/Head/VP/Principal-equivalent title. Anchor this to the candidate's own demonstrated scope (managing managers, 55-95 person department) as the practical bar. If the job description gives no usable scope signal (very thin snippet, inaccessible JD), that's UNSURE, not an automatic SKIP or RELEVANT.
+
+CTO and other Chief-level titles are out of scope — VP Engineering is the top of the target range, not Chief-level.
+
+Both profiles are valid, as long as they clear the senior-scope bar above:
 - Technical EM roles (architecture-focused, some hands-on involvement) — 12 years of C++ is real, do not filter these out
 - Senior leadership roles (managing managers, large org, delivery focus) — Head of Department at 55-95 people is real experience
 
@@ -44,8 +47,14 @@ Skip ONLY if the job description hard-requires expertise the candidate genuinely
 - **Mobile development background**: e.g. "iOS/Android engineering background required"
 - **Hands-on gaming industry experience**: e.g. "game development background required"
 
+Also skip:
+- **Pure individual-contributor roles**: e.g. Staff/Principal Software Engineer, Architect with no people-management scope, "Founding Engineer" hired as a hands-on IC — skip regardless of technical fit, even a strong one
+- **Leadership roles outside the software engineering/development organization**: Quality Assurance-only, Security-only, Data/Analytics-only, Program/PMO management, Governance/Risk/Compliance, general business Consulting, Talent/Learning & Development, general "General Manager"/Operations roles — unless the JD explicitly describes leading a software engineering or development team (e.g. "Head of Platform Engineering", "Director of SRE" are core engineering, not adjacent-domain)
+- **CTO / Chief-level titles**: Chief Technology Officer, Chief Engineering Officer, or equivalent — too broad/exec-generalist in scope; VP Engineering is the top of the target range
+
 Do NOT skip based on:
 - Role being "too technical" — the candidate has real C++ depth
-- Role being "too senior" — the candidate has Head of Department experience
+- Role being "too senior", short of the explicit CTO/Chief-level cap above — the candidate has Head of Department experience
 - Company domain (fintech, gaming, etc.) unless deep domain expertise is a hard requirement
-- Small team size — that is the candidate's decision to make
+
+Note: team/org size IS relevant now as one of the senior-scope signals described in Target Roles above (a single small team with no manager-of-managers structure suggests the role is below the Senior EM+ bar) — this is different from the old rule that ignored team size entirely, since plain EM roles are no longer targets on their own.

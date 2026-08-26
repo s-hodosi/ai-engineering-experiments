@@ -34,6 +34,18 @@ from notifier import Notifier
 _DB_PATH = os.path.join(_SERVICE_DIR, "jobs.db")
 _PROFILE_PATH = os.path.join(_SERVICE_DIR, "profile.md")
 
+# Recruiter-aggregator accounts that repost the same generic listing under a
+# new job ID repeatedly, evading URL-based dedup. Extend as new offenders show up.
+_BLOCKLISTED_COMPANIES = {
+    "jobs ai",
+    "hire feed",
+    "quik hire staffing",
+}
+
+
+def _is_blocklisted(company: str) -> bool:
+    return company.strip().lower() in _BLOCKLISTED_COMPANIES
+
 
 def run_once():
     print("[main] Scout run starting...")
@@ -55,8 +67,15 @@ def run_once():
 
     entries = []
     for job in jobs:
+        company = job.get("company", "")
+
+        if _is_blocklisted(company):
+            print(f"[main] Blocklisted: {job['title']} @ {company}")
+            mark_seen(job["url"], job["title"], company, "SKIP", _DB_PATH)
+            continue
+
         verdict, explanation = relevance_filter.evaluate(job)
-        mark_seen(job["url"], job["title"], job.get("company", ""), verdict, _DB_PATH)
+        mark_seen(job["url"], job["title"], company, verdict, _DB_PATH)
         if verdict in ("RELEVANT", "UNSURE"):
             entries.append((job, verdict, explanation))
 
