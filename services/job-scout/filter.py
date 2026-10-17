@@ -3,7 +3,7 @@ import re
 import litellm
 
 _VERDICT_RE = re.compile(r'VERDICT:\s*(RELEVANT|UNSURE|SKIP)', re.IGNORECASE)
-_EXPLANATION_RE = re.compile(r'EXPLANATION:\s*(.+)', re.IGNORECASE | re.DOTALL)
+_SCOPE_RE = re.compile(r'SCOPE:\s*(.+)', re.IGNORECASE | re.DOTALL)
 
 _SYSTEM = (
     "You are a job relevance filter. Evaluate job postings strictly against the candidate "
@@ -30,7 +30,13 @@ Evaluate this job posting against the candidate profile.
 
 Respond in EXACTLY this format — nothing else:
 VERDICT: <RELEVANT|UNSURE|SKIP>
-EXPLANATION: <one paragraph>
+SCOPE: <one or two sentences describing the scope of the role>
+
+SCOPE rules:
+- Describe what the role actually owns, NOT why it fits the candidate — never mention the candidate or the profile
+- Include, when the posting states them: team/org size and composition (e.g. number of engineers, managers reporting in), what the teams build (product, platform, domain), company type/industry, and who the role reports to
+- Be concrete and dense, e.g. "Leads 3 EMs and ~30 backend/mobile engineers building the payments platform of a Series C fintech; reports to the CTO."
+- Do not invent numbers or details that the posting does not state; if scope is barely described, say so briefly (e.g. "Scope not described beyond the title; B2B SaaS company in logistics.")
 
 Rules:
 - RELEVANT: strong match, candidate should read this immediately
@@ -63,10 +69,10 @@ Location rules (candidate is in Hungary, EU — not open to relocation):
 
 def _parse(text: str) -> tuple[str, str]:
     verdict_m = _VERDICT_RE.search(text)
-    explanation_m = _EXPLANATION_RE.search(text)
+    scope_m = _SCOPE_RE.search(text)
     verdict = verdict_m.group(1).upper() if verdict_m else "UNSURE"
-    explanation = explanation_m.group(1).strip() if explanation_m else text.strip()
-    return verdict, explanation
+    scope = scope_m.group(1).strip() if scope_m else text.strip()
+    return verdict, scope
 
 
 class RelevanceFilter:

@@ -15,8 +15,8 @@ The system SHALL collect all RELEVANT and UNSURE jobs evaluated during a single 
 - **WHEN** a scheduler run finds no RELEVANT or UNSURE jobs
 - **THEN** no email is sent
 
-### Requirement: Digest email contains role details and AI relevance paragraph per entry
-Each entry in the digest email SHALL include: role title, company name (if available), location, job URL, verdict label, and the AI-generated explanation paragraph from the LLM filter.
+### Requirement: Digest email contains role details and AI role scope summary per entry
+Each entry in the digest email SHALL include: role title, company name (if available), location, job URL, verdict label, and the AI-generated one-to-two-sentence role scope summary from the LLM filter (what the role owns: team/org size, what is built, industry, reporting line — not why it fits the candidate).
 
 #### Scenario: Digest subject summarizes the run
 - **WHEN** a digest email is sent
@@ -24,7 +24,7 @@ Each entry in the digest email SHALL include: role title, company name (if avail
 
 #### Scenario: Each entry in the digest identifies its role
 - **WHEN** a digest email is rendered
-- **THEN** each entry SHALL be clearly delimited and include its own title, company, location, verdict, job URL, and the LLM explanation paragraph
+- **THEN** each entry SHALL be clearly delimited and include its own title, company, location, verdict, job URL, and the LLM scope summary
 
 ### Requirement: Email credentials loaded from config
 The system SHALL load Gmail address and app password from `config.env`. The app password SHALL never be hardcoded.

@@ -74,10 +74,10 @@ def run_once():
             mark_seen(job["url"], job["title"], company, "SKIP", _DB_PATH)
             continue
 
-        verdict, explanation = relevance_filter.evaluate(job)
+        verdict, scope = relevance_filter.evaluate(job)
         mark_seen(job["url"], job["title"], company, verdict, _DB_PATH)
         if verdict in ("RELEVANT", "UNSURE"):
-            entries.append((job, verdict, explanation))
+            entries.append((job, verdict, scope))
 
     if entries:
         notifier.send_digest(entries)

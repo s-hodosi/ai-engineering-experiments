@@ -29,7 +29,7 @@ def _clean_title(title: str) -> str:
     return title.strip()
 
 
-def _render_entry(job: dict, verdict: str, explanation: str) -> str:
+def _render_entry(job: dict, verdict: str, scope: str) -> str:
     title = job.get("title", "Unknown Role")
     company = job.get("company") or _extract_company(title) or "Unknown Company"
     location = job.get("location") or _extract_location(job)
@@ -37,7 +37,7 @@ def _render_entry(job: dict, verdict: str, explanation: str) -> str:
 
     return (
         f"[{verdict}] {role} – {company} ({location})\n\n"
-        f"{explanation}\n\n"
+        f"{scope}\n\n"
         f"---\n"
         f"Role:    {title}\n"
         f"URL:     {job['url']}\n"
@@ -58,7 +58,7 @@ class Notifier:
 
         separator = "\n" + ("=" * 40) + "\n\n"
         body = separator.join(
-            _render_entry(job, verdict, explanation) for job, verdict, explanation in entries
+            _render_entry(job, verdict, scope) for job, verdict, scope in entries
         )
 
         msg = MIMEMultipart("alternative")

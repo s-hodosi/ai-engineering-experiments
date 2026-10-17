@@ -29,12 +29,12 @@ if not jobs:
 f = RelevanceFilter(os.path.join(_DIR, "profile.md"), os.getenv("GOOGLE_API_KEY"))
 
 for job in jobs[:3]:  # cap at 3 LLM calls for the smoke test
-    verdict, explanation = f.evaluate(job)
+    verdict, scope = f.evaluate(job)
     mark_seen(job["url"], job["title"], job.get("company", ""), verdict, DB_PATH)
     print(f"[{verdict}] {job['title']} @ {job.get('company', '?')}")
     print(f"  URL: {job['url']}")
     print(f"  Snippet: {job['snippet'][:200]}...")
-    print(f"  {explanation[:200]}...")
+    print(f"  {scope[:200]}...")
     print()
 
 print("=== Smoke test complete ===")
