@@ -18,6 +18,6 @@
 
 ## 4. Verification
 
-- [ ] 4.1 Run `python test_smoke.py` (after deleting `test_jobs.db`) and confirm the run completes, real JDs are still extracted, and any failures produce the new log lines
-- [ ] 4.2 Update `openspec/specs/linkedin-email-source/spec.md` via archive/sync once implemented
+- [x] 4.1 Run `python test_smoke.py` (after deleting `test_jobs.db`) and confirm the run completes, real JDs are still extracted, and any failures produce the new log lines (2026-10-17: 238 fetches; 5 × HTTP 429 all recovered on attempt 2 after a 3–4s wait; 5 × 404 `gone`, not retried; no other failures — 429 rate limiting is the observed cause)
+- [x] 4.2 Update `openspec/specs/linkedin-email-source/spec.md` via archive/sync once implemented
 - [ ] 4.3 After ~1 week of real runs, review `scout.log` recovery/final-failure lines and `debug/jd_failures/` captures; decide whether deferred cross-run retry (design.md Non-Goals) is warranted
