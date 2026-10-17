@@ -1,5 +1,6 @@
 import email
 import imaplib
+import os
 import re
 import time
 from datetime import datetime, timedelta
@@ -13,6 +14,13 @@ _IMAP_HOST = "imap.gmail.com"
 _LINKEDIN_FROM = "jobalerts-noreply@linkedin.com"
 _LOOKBACK_DAYS = 7
 _MIN_JD_LENGTH = 200
+
+# Transient JD fetch failures (LinkedIn intermittently serves pages without the
+# description) are retried after these waits, in seconds.
+_RETRY_WAITS = (3, 10)
+_MAX_RETRY_AFTER = 30
+_DEBUG_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "debug", "jd_failures")
+_MAX_CAPTURES = 50
 
 _HEADERS = {
     "User-Agent": (
@@ -94,6 +102,63 @@ def _parse_jobs_from_email(html_body: str) -> list[dict]:
     return jobs
 
 
+def _now() -> str:
+    return datetime.now().isoformat(timespec="seconds")
+
+
+def _fetch_jd_once(guest_url: str):
+    """Single attempt. Returns (outcome, text, response); see design.md for outcomes."""
+    try:
+        resp = requests.get(guest_url, headers=_HEADERS, timeout=15)
+    except Exception as e:
+        return "error", str(e), None
+
+    if resp.status_code in (404, 410):
+        return "gone", "", resp
+    if resp.status_code != 200:
+        return f"http_{resp.status_code}", "", resp
+
+    soup = BeautifulSoup(resp.text, "html.parser")
+    jd_div = (
+        soup.find("div", class_=re.compile(r"show-more-less-html__markup"))
+        or soup.find("div", class_=re.compile(r"description__text"))
+        or soup.find("section", class_=re.compile(r"description"))
+    )
+    if not jd_div:
+        return "no_jd", "", resp
+
+    text = jd_div.get_text(separator="\n", strip=True)
+    if len(text) < _MIN_JD_LENGTH:
+        return "short", text, resp
+    return "ok", text, resp
+
+
+def _retry_wait(resp, default: int) -> int:
+    retry_after = resp.headers.get("Retry-After", "") if resp is not None else ""
+    if retry_after.strip().isdigit():
+        return min(int(retry_after), _MAX_RETRY_AFTER)
+    return default
+
+
+def _save_failure(job_id: str, resp):
+    try:
+        os.makedirs(_DEBUG_DIR, exist_ok=True)
+        stamp = datetime.now().strftime("%Y%m%dT%H%M%S")
+        path = os.path.join(_DEBUG_DIR, f"{job_id}_{stamp}.html")
+        headers = "\n".join(f"{k}: {v}" for k, v in resp.headers.items()).replace("--", "- -")
+        with open(path, "w", encoding="utf-8") as f:
+            f.write(f"<!--\nstatus: {resp.status_code}\n{headers}\n-->\n{resp.text}")
+
+        captures = sorted(
+            (os.path.join(_DEBUG_DIR, n) for n in os.listdir(_DEBUG_DIR) if n.endswith(".html")),
+            key=os.path.getmtime,
+        )
+        for old in captures[:-_MAX_CAPTURES]:
+            os.remove(old)
+    except Exception as e:
+        print(f"[linkedin] {_now()} Could not save failed response for job {job_id}: {e}")
+
+
 def _fetch_jd(canonical_url: str) -> str:
     m = re.search(r"/jobs/view/(\d+)", canonical_url)
     if not m:
@@ -101,26 +166,36 @@ def _fetch_jd(canonical_url: str) -> str:
 
     job_id = m.group(1)
     guest_url = f"https://www.linkedin.com/jobs-guest/jobs/api/jobPosting/{job_id}"
+    attempts = len(_RETRY_WAITS) + 1
 
-    try:
-        resp = requests.get(guest_url, headers=_HEADERS, timeout=15)
-        soup = BeautifulSoup(resp.text, "html.parser")
+    for attempt in range(1, attempts + 1):
+        outcome, text, resp = _fetch_jd_once(guest_url)
 
-        jd_div = (
-            soup.find("div", class_=re.compile(r"show-more-less-html__markup"))
-            or soup.find("div", class_=re.compile(r"description__text"))
-            or soup.find("section", class_=re.compile(r"description"))
+        if outcome == "ok":
+            if attempt > 1:
+                print(f"[linkedin] {_now()} JD fetch recovered for job {job_id} on attempt {attempt}/{attempts}")
+            return text[:3000]
+
+        status = resp.status_code if resp is not None else "-"
+        length = len(resp.text) if resp is not None else 0
+        detail = f" ({text})" if outcome == "error" else ""
+        print(
+            f"[linkedin] {_now()} JD fetch attempt {attempt}/{attempts} failed for job {job_id}: "
+            f"status={status} outcome={outcome} length={length}{detail}"
         )
 
-        text = jd_div.get_text(separator="\n", strip=True) if jd_div else ""
+        if outcome in ("gone", "short") or attempt == attempts:
+            break
+        time.sleep(_retry_wait(resp, _RETRY_WAITS[attempt - 1]))
 
-        if len(text) >= _MIN_JD_LENGTH:
-            return text[:3000]
-        return "[limited info — JD not accessible]"
+    if outcome != "short":
+        print(f"[linkedin] {_now()} JD fetch gave up for job {job_id} after {attempt} attempt(s): {outcome}")
+        if resp is not None:
+            _save_failure(job_id, resp)
 
-    except Exception as e:
-        print(f"[linkedin] JD fetch failed for {canonical_url}: {e}")
+    if outcome == "error" or outcome.startswith("http_"):
         return "[limited info — fetch failed]"
+    return "[limited info — JD not accessible]"
 
 
 def fetch_jobs(gmail_address: str, app_password: str, db_path: str) -> list[dict]:

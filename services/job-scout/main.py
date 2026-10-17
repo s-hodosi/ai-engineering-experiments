@@ -2,6 +2,7 @@ import argparse
 import os
 import signal
 import sys
+from datetime import datetime
 
 from dotenv import load_dotenv
 
@@ -48,7 +49,7 @@ def _is_blocklisted(company: str) -> bool:
 
 
 def run_once():
-    print("[main] Scout run starting...")
+    print(f"[main] {datetime.now().isoformat(timespec='seconds')} Scout run starting...")
 
     jobs = fetch_jobs(
         os.getenv("GMAIL_ADDRESS"),
