@@ -5,18 +5,22 @@ Gmail SMTP email notification with AI relevance paragraph, sent as a single dige
 ## Requirements
 
 ### Requirement: Digest email per scheduler run
-The system SHALL collect all RELEVANT and UNSURE jobs evaluated during a single scheduler run and send at most one digest email for that run, containing all of them, using Gmail SMTP with app password authentication. Sending and receiving address SHALL be the same (self-email). The system SHALL NOT send more than one notification email per scheduler run, regardless of how many jobs matched.
+The system SHALL collect all RELEVANT and UNSURE jobs evaluated during a single scheduler run, plus any jobs given up after the transient-retry cap in that run. It SHALL send at most one digest email for that run, containing all of them, using Gmail SMTP with app password authentication. Sending and receiving address SHALL be the same (self-email). Per scheduler run, the system SHALL send at most one digest email and at most one filter-outage alert email (see `llm-failure-handling`), and no other notification emails.
 
 #### Scenario: Multiple matches in a run produce one digest email
 - **WHEN** a scheduler run evaluates jobs and one or more receive verdict RELEVANT or UNSURE
-- **THEN** exactly one email is sent at the end of that run, listing every matched job from the run
+- **THEN** exactly one digest email is sent at the end of that run, listing every matched job from the run
 
 #### Scenario: No matches in a run
-- **WHEN** a scheduler run finds no RELEVANT or UNSURE jobs
-- **THEN** no email is sent
+- **WHEN** a scheduler run finds no RELEVANT or UNSURE jobs and gives up on no jobs
+- **THEN** no digest email is sent
+
+#### Scenario: Run with partial results and a fatal outage
+- **WHEN** a run produces matches before hitting a fatal LLM failure
+- **THEN** the run SHALL send one digest with those matches and, subject to alert throttling, one separate outage alert email
 
 ### Requirement: Digest email contains role details and AI role scope summary per entry
-Each entry in the digest email SHALL include: role title, company name (if available), location, the AI-generated one-to-two-sentence role scope summary from the LLM filter (what the role owns: team/org size, what is built, industry, reporting line — not why it fits the candidate), and the job URL, in that order. The verdict label SHALL NOT be shown.
+Each entry in the digest email SHALL include, in this order: role title, company name (if available), location, the AI-generated one-to-two-sentence role scope summary from the LLM filter, and the job URL. The scope summary describes what the role owns (team/org size, what is built, industry, reporting line), not why it fits the candidate. The verdict label SHALL NOT be shown. For a job given up after the retry cap, the scope summary SHALL be replaced by a fixed note stating it could not be evaluated and should be reviewed manually. Digest entries SHALL NOT contain raw error or exception text.
 
 #### Scenario: Digest subject summarizes the run
 - **WHEN** a digest email is sent
@@ -25,6 +29,10 @@ Each entry in the digest email SHALL include: role title, company name (if avail
 #### Scenario: Each entry in the digest identifies its role
 - **WHEN** a digest email is rendered
 - **THEN** each entry SHALL be clearly delimited and include its own title, company, location, LLM scope summary, and job URL
+
+#### Scenario: Given-up job shows a fixed note, not an error
+- **WHEN** a digest includes a job given up after the retry cap
+- **THEN** its entry SHALL show the fixed "could not be evaluated — review manually" note in place of the scope summary, with no exception text
 
 ### Requirement: Email credentials loaded from config
 The system SHALL load Gmail address and app password from `config.env`. The app password SHALL never be hardcoded.
