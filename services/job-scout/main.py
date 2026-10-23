@@ -2,7 +2,7 @@ import argparse
 import os
 import signal
 import sys
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 
 from dotenv import load_dotenv
 
@@ -27,8 +27,17 @@ def _validate_config():
         sys.exit(1)
 
 
-from db import init_db, mark_seen
-from filter import RelevanceFilter
+from db import (
+    count_pending,
+    defer_job,
+    get_state,
+    init_db,
+    load_pending,
+    mark_seen,
+    remove_pending,
+    set_state,
+)
+from filter import FilterError, RelevanceFilter
 from linkedin_email_source import fetch_jobs
 from notifier import Notifier
 
@@ -44,14 +53,36 @@ _BLOCKLISTED_COMPANIES = {
 }
 
 
+_MAX_TRANSIENT_ATTEMPTS = 5
+_ALERT_INTERVAL = timedelta(hours=24)
+_GAVE_UP_NOTE = "Could not be evaluated by the filter after repeated errors — review manually."
+
+
 def _is_blocklisted(company: str) -> bool:
     return company.strip().lower() in _BLOCKLISTED_COMPANIES
+
+
+def _update_outage_state(aborted: FilterError | None, any_success: bool, notifier: Notifier):
+    if aborted:
+        last_alert = get_state("last_alert_at", _DB_PATH)
+        ongoing = get_state("outage_reason", _DB_PATH) is not None
+        now = datetime.now(timezone.utc)
+        if not ongoing or not last_alert or now - datetime.fromisoformat(last_alert) >= _ALERT_INTERVAL:
+            notifier.send_alert(aborted.reason, count_pending(_DB_PATH))
+            set_state("last_alert_at", now.isoformat(), _DB_PATH)
+        set_state("outage_reason", aborted.reason, _DB_PATH)
+    elif any_success:
+        set_state("outage_reason", None, _DB_PATH)
+        set_state("last_alert_at", None, _DB_PATH)
 
 
 def run_once():
     print(f"[main] {datetime.now().isoformat(timespec='seconds')} Scout run starting...")
 
-    jobs = fetch_jobs(
+    # Pending jobs first: they were deferred by an earlier LLM failure, and their
+    # alert emails are already marked processed, so this is their only way back.
+    pending = load_pending(_DB_PATH)
+    jobs = pending + fetch_jobs(
         os.getenv("GMAIL_ADDRESS"),
         os.getenv("GMAIL_APP_PASSWORD"),
         _DB_PATH,
@@ -61,30 +92,62 @@ def run_once():
         print("[main] Nothing new. Done.")
         return
 
-    print(f"[main] {len(jobs)} new jobs to evaluate")
+    print(f"[main] {len(jobs)} jobs to evaluate ({len(pending)} pending from earlier runs)")
 
     relevance_filter = RelevanceFilter(_PROFILE_PATH, os.getenv("GOOGLE_API_KEY"))
     notifier = Notifier(os.getenv("GMAIL_ADDRESS"), os.getenv("GMAIL_APP_PASSWORD"))
 
     entries = []
+    aborted: FilterError | None = None
+    any_success = False
+    deferred = 0
     for job in jobs:
         company = job.get("company", "")
 
         if _is_blocklisted(company):
             print(f"[main] Blocklisted: {job['title']} @ {company}")
             mark_seen(job["url"], job["title"], company, "SKIP", _DB_PATH)
+            remove_pending(job["url"], _DB_PATH)
             continue
 
-        verdict, scope = relevance_filter.evaluate(job)
+        if aborted:
+            defer_job(job, aborted.detail, count_attempt=False, path=_DB_PATH)
+            deferred += 1
+            continue
+
+        try:
+            verdict, scope = relevance_filter.evaluate(job)
+        except FilterError as e:
+            deferred += 1
+            if e.kind == "fatal":
+                print(f"[main] Filter down ({e.reason}); deferring remaining jobs without LLM calls")
+                aborted = e
+                defer_job(job, e.detail, count_attempt=False, path=_DB_PATH)
+                continue
+            attempts = defer_job(job, e.detail, count_attempt=True, path=_DB_PATH)
+            if attempts >= _MAX_TRANSIENT_ATTEMPTS:
+                print(f"[main] Giving up after {attempts} attempts: {job['url']}")
+                mark_seen(job["url"], job["title"], company, "ERROR", _DB_PATH)
+                remove_pending(job["url"], _DB_PATH)
+                entries.append((job, "ERROR", _GAVE_UP_NOTE))
+            continue
+
+        any_success = True
         mark_seen(job["url"], job["title"], company, verdict, _DB_PATH)
+        remove_pending(job["url"], _DB_PATH)
         if verdict in ("RELEVANT", "UNSURE"):
             entries.append((job, verdict, scope))
 
     if entries:
         notifier.send_digest(entries)
-        print(f"[main] Done. 1 digest email sent covering {len(entries)} of {len(jobs)} evaluated.")
+        print(f"[main] 1 digest email sent covering {len(entries)} of {len(jobs)} jobs.")
     else:
-        print(f"[main] Done. No matches, no email sent ({len(jobs)} evaluated).")
+        print(f"[main] No matches, no digest sent ({len(jobs)} jobs).")
+    if deferred:
+        print(f"[main] {deferred} job(s) deferred to a later run.")
+
+    _update_outage_state(aborted, any_success, notifier)
+    print("[main] Done.")
 
 
 def main():

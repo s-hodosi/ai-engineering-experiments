@@ -8,7 +8,7 @@ from datetime import datetime, timedelta
 import requests
 from bs4 import BeautifulSoup
 
-from db import is_email_processed, is_seen, mark_email_processed
+from db import is_email_processed, is_pending, is_seen, mark_email_processed
 
 _IMAP_HOST = "imap.gmail.com"
 _LINKEDIN_FROM = "jobalerts-noreply@linkedin.com"
@@ -248,7 +248,11 @@ def fetch_jobs(gmail_address: str, app_password: str, db_path: str) -> list[dict
 
         for job in parsed:
             canonical_url = job["canonical_url"]
-            if canonical_url in seen_this_run or is_seen(canonical_url, db_path):
+            if (
+                canonical_url in seen_this_run
+                or is_seen(canonical_url, db_path)
+                or is_pending(canonical_url, db_path)
+            ):
                 continue
             seen_this_run.add(canonical_url)
 

@@ -11,7 +11,7 @@ _DIR = os.path.dirname(os.path.abspath(__file__))
 load_dotenv(os.path.join(_DIR, "config.env"))
 
 from db import init_db, is_seen, mark_seen
-from filter import RelevanceFilter
+from filter import FilterError, RelevanceFilter
 from linkedin_email_source import fetch_jobs
 
 DB_PATH = os.path.join(_DIR, "test_jobs.db")
@@ -29,7 +29,11 @@ if not jobs:
 f = RelevanceFilter(os.path.join(_DIR, "profile.md"), os.getenv("GOOGLE_API_KEY"))
 
 for job in jobs[:3]:  # cap at 3 LLM calls for the smoke test
-    verdict, scope = f.evaluate(job)
+    try:
+        verdict, scope = f.evaluate(job)
+    except FilterError as e:
+        print(f"[DEFERRED {e.kind}/{e.reason}] {job['title']} @ {job.get('company', '?')}\n")
+        continue
     mark_seen(job["url"], job["title"], job.get("company", ""), verdict, DB_PATH)
     print(f"[{verdict}] {job['title']} @ {job.get('company', '?')}")
     print(f"  URL: {job['url']}")

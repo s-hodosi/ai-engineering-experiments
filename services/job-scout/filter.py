@@ -67,6 +67,33 @@ Location rules (candidate is in Hungary, EU — not open to relocation):
 """
 
 
+class FilterError(Exception):
+    """An LLM call that produced no verdict. kind is "fatal" or "transient";
+    reason is "billing", "auth" or "transient"."""
+
+    def __init__(self, kind: str, reason: str, detail: str):
+        super().__init__(f"{kind}/{reason}: {detail}")
+        self.kind = kind
+        self.reason = reason
+        self.detail = detail
+
+
+# litellm may wrap a billing error in a generic APIConnectionError, so the
+# message text is checked as well as the status code.
+_BILLING_RE = re.compile(r'"code":\s*402|prepayment credits are depleted', re.IGNORECASE)
+_AUTH_RE = re.compile(r'API_KEY_INVALID|API key not valid|PERMISSION_DENIED', re.IGNORECASE)
+
+
+def _classify(exc: Exception) -> FilterError:
+    status = getattr(exc, "status_code", None)
+    text = str(exc)
+    if status == 402 or _BILLING_RE.search(text):
+        return FilterError("fatal", "billing", text)
+    if status in (401, 403) or _AUTH_RE.search(text):
+        return FilterError("fatal", "auth", text)
+    return FilterError("transient", "transient", text)
+
+
 def _parse(text: str) -> tuple[str, str]:
     verdict_m = _VERDICT_RE.search(text)
     scope_m = _SCOPE_RE.search(text)
@@ -99,9 +126,14 @@ class RelevanceFilter:
                     {"role": "user", "content": prompt},
                 ],
                 temperature=0.1,
+                # Thinking tokens are billed as output. "low" caps them at 1024: with thinking
+                # fully off the model let through plain-titled EM roles the scope rules should SKIP.
+                reasoning_effort="low",
             )
             text = response.choices[0].message.content
-            return _parse(text)
         except Exception as e:
             print(f"[filter] LLM call failed for {job.get('url')}: {e}")
-            return "UNSURE", f"Filter unavailable ({e}) — review manually."
+            raise _classify(e) from e
+        if not text:
+            raise FilterError("transient", "transient", "empty LLM response")
+        return _parse(text)
