@@ -1,5 +1,0 @@
-litellm
-apscheduler
-python-dotenv
-requests
-beautifulsoup4

@@ -1,0 +1,46 @@
+{
+  "prdFile": "docs/prds/personal-job-opportunity-evaluator.md",
+  "lastAccessed": "2026-07-12T00:00:00Z",
+  "currentPhase": "requirements-gathering",
+  "questionsAsked": [
+    "product-name",
+    "core-problem",
+    "target-users",
+    "mvp-scope"
+  ],
+  "answeredQuestions": {
+    "product-name": "Personal Job Opportunity Evaluator",
+    "core-problem": "It is hard to evaluate and compare job opportunities consistently and efficiently.",
+    "target-users": "A single user seeking to evaluate job opportunities before applying.",
+    "mvp-scope": "A lightweight web app for entering opportunities, scoring fit, and reviewing saved evaluations."
+  },
+  "referencesProcessed": [
+    {
+      "file": "conversation",
+      "status": "analyzed",
+      "timestamp": "2026-07-12T00:00:00Z",
+      "keyFindings": "The user wants a personal web app that evaluates job opportunities and helps decide whether to pursue them.",
+      "integratedSections": [
+        "executive-summary",
+        "problem-definition",
+        "functional-requirements"
+      ],
+      "conflicts": [],
+      "pendingActions": []
+    }
+  ],
+  "nextActions": [
+    "Refine the scoring model and weighting options",
+    "Decide whether to support import from job URLs",
+    "Review the PRD for missing details or preferred features"
+  ],
+  "qualityChecks": [
+    "goals-defined",
+    "scope-clarified",
+    "requirements-drafted"
+  ],
+  "userPreferences": {
+    "detail-level": "comprehensive",
+    "question-style": "structured"
+  }
+}

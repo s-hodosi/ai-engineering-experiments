@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Job Opportunity Evaluator</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 2rem; max-width: 900px; }
+    .grid { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+    label { display: block; margin-bottom: 0.3rem; font-weight: 600; }
+    input, textarea, select { width: 100%; padding: 0.5rem; margin-bottom: 0.8rem; }
+    button { padding: 0.6rem 1rem; }
+    .card { border: 1px solid #ddd; padding: 1rem; border-radius: 8px; margin-top: 1rem; }
+  </style>
+</head>
+<body>
+  <h1>Job Opportunity Evaluator</h1>
+  <p>Paste a role, score it quickly, and decide whether it is worth pursuing.</p>
+  <p><a href="/history">View saved evaluations</a></p>
+
+  <form method="post" action="/import">
+    <label>Job URL</label>
+    <input name="url" placeholder="https://example.com/jobs/123" />
+    <button type="submit">Import details</button>
+  </form>
+
+  {% if imported %}
+  <div class="card">
+    <h2>Imported details</h2>
+    <p>Review the prefilled values below before scoring.</p>
+  </div>
+  {% endif %}
+
+  <form method="post" action="/evaluate">
+    <div class="grid">
+      <div>
+        <label>Title</label>
+        <input name="title" required value="{{ imported.title if imported else '' }}" />
+      </div>
+      <div>
+        <label>Company</label>
+        <input name="company" required value="{{ imported.company if imported else '' }}" />
+      </div>
+      <div>
+        <label>Location</label>
+        <input name="location" required value="{{ imported.location if imported else '' }}" />
+      </div>
+    </div>
+
+    <label>Summary</label>
+    <textarea name="summary" rows="4">{{ imported.summary if imported else '' }}</textarea>
+
+    <div class="grid">
+      <div>
+        <label>Salary fit (1-5)</label>
+        <input type="number" name="salary_fit" min="1" max="5" value="3" />
+      </div>
+      <div>
+        <label>Role alignment (1-5)</label>
+        <input type="number" name="role_alignment" min="1" max="5" value="3" />
+      </div>
+      <div>
+        <label>Location flexibility (1-5)</label>
+        <input type="number" name="location_flexibility" min="1" max="5" value="3" />
+      </div>
+      <div>
+        <label>Growth potential (1-5)</label>
+        <input type="number" name="growth_potential" min="1" max="5" value="3" />
+      </div>
+      <div>
+        <label>Company fit (1-5)</label>
+        <input type="number" name="company_fit" min="1" max="5" value="3" />
+      </div>
+      <div>
+        <label>Effort to apply (1-5)</label>
+        <input type="number" name="effort_to_apply" min="1" max="5" value="3" />
+      </div>
+    </div>
+
+    <button type="submit">Evaluate</button>
+  </form>
+
+  {% if result %}
+  <div class="card">
+    <h2>{{ result.title }} at {{ result.company }}</h2>
+    <p><strong>Location:</strong> {{ result.location }}</p>
+    <p><strong>Score:</strong> {{ result.score }}/100</p>
+    <p><strong>Recommendation:</strong> {{ recommendation }}</p>
+    <p><strong>Summary:</strong> {{ result.summary or 'No summary provided.' }}</p>
+    <h3>Raw scores</h3>
+    <ul>
+      {% for key, value in result.raw_scores.items() %}
+      <li>{{ key.replace('_',' ') }}: {{ value }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+</body>
+</html>

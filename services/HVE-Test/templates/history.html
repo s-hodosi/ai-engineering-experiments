@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Evaluation History</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 2rem; max-width: 900px; }
+    .card { border: 1px solid #ddd; padding: 1rem; border-radius: 8px; margin-top: 1rem; }
+    a { color: #0b57d0; }
+  </style>
+</head>
+<body>
+  <h1>Saved Evaluations</h1>
+  <p><a href="/">Back to evaluator</a></p>
+
+  {% if evaluations %}
+    {% for evaluation in evaluations %}
+    <div class="card">
+      <h2><a href="/history/{{ evaluation.id }}">{{ evaluation.title }} at {{ evaluation.company }}</a></h2>
+      <p><strong>Score:</strong> {{ evaluation.score }}/100</p>
+      <p><strong>Recommendation:</strong> {{ evaluation.recommendation }}</p>
+      <p><strong>Saved:</strong> {{ evaluation.created_at }}</p>
+    </div>
+    {% endfor %}
+  {% else %}
+    <p>No saved evaluations yet.</p>
+  {% endif %}
+</body>
+</html>
