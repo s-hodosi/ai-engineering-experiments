@@ -1,7 +1,0 @@
-config.env
-jobs.db
-test_jobs.db
-*.log
-__pycache__/
-*.pyc
-debug/
